@@ -1,14 +1,13 @@
-
 import os
 import json
 import telegram
-import asyncio
+import time
 
 def get_correct_option_id(options, answer):
     """Converts the answer (e.g., 'A') to a zero-based index."""
     return list(options.keys()).index(answer)
 
-async def main():
+def main():
     """
     This is the main function that sends the MCQ questions.
     """
@@ -37,7 +36,7 @@ async def main():
 
     if last_index >= len(questions):
         for chat_id in chat_ids:
-            await bot.send_message(chat_id=chat_id, text="All questions have been sent. We are done!")
+            bot.send_message(chat_id=chat_id, text="All questions have been sent. We are done!")
         return
 
     start_index = last_index
@@ -50,7 +49,7 @@ async def main():
             options = list(question_data['options'].values())
             correct_option_id = get_correct_option_id(question_data['options'], question_data['answer'])
             
-            await bot.send_poll(
+            bot.send_poll(
                 chat_id=chat_id,
                 question=f"Q{question_data['id']}: {question_data['question']}",
                 options=options,
@@ -59,10 +58,10 @@ async def main():
                 is_anonymous=True
             )
             # Add a small delay between questions to avoid hitting rate limits
-            await asyncio.sleep(1)
+            time.sleep(1)
 
     with open(state_file, 'w') as f:
         f.write(str(end_index))
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    main()
