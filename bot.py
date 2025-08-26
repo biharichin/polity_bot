@@ -1,7 +1,9 @@
+
 import os
 import json
 import telegram
 import time
+from telegram.error import Unauthorized
 
 def get_correct_option_id(options, answer):
     """Converts the answer (e.g., 'A') to a zero-based index."""
@@ -36,7 +38,10 @@ def main():
 
     if last_index >= len(questions):
         for chat_id in chat_ids:
-            bot.send_message(chat_id=chat_id, text="All questions have been sent. We are done!")
+            try:
+                bot.send_message(chat_id=chat_id, text="All questions have been sent. We are done!")
+            except Unauthorized:
+                print(f"Warning: Bot was blocked by chat ID {chat_id}. Could not send completion message.")
         return
 
     start_index = last_index
@@ -49,14 +54,19 @@ def main():
             options = list(question_data['options'].values())
             correct_option_id = get_correct_option_id(question_data['options'], question_data['answer'])
             
-            bot.send_poll(
-                chat_id=chat_id,
-                question=f"Q{question_data['id']}: {question_data['question']}",
-                options=options,
-                type=telegram.Poll.QUIZ,
-                correct_option_id=correct_option_id,
-                is_anonymous=True
-            )
+            try:
+                bot.send_poll(
+                    chat_id=chat_id,
+                    question=f"Q{question_data['id']}: {question_data['question']}",
+                    options=options,
+                    type=telegram.Poll.QUIZ,
+                    correct_option_id=correct_option_id,
+                    is_anonymous=True
+                )
+            except Unauthorized:
+                print(f"Warning: Bot was blocked by chat ID {chat_id}. Skipping this user.")
+                break # Stop sending to this user and move to the next
+            
             # Add a small delay between questions to avoid hitting rate limits
             time.sleep(1)
 
