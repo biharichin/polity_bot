@@ -1,3 +1,4 @@
+
 name: Send Daily MCQ Questions
 
 on:
@@ -9,6 +10,8 @@ on:
 jobs:
   send_questions:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Add this line to grant write permissions
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
