@@ -50,10 +50,13 @@ def main():
     
     questions_to_send = questions[start_index:end_index]
 
-    polls_sent_successfully = False
-    for chat_id in chat_ids:
-        try:
-            for question_data in questions_to_send:
+    new_last_index = last_index
+
+    for i, question_data in enumerate(questions_to_send):
+        current_question_index = start_index + i
+        poll_sent_to_at_least_one_user = False
+        for chat_id in chat_ids:
+            try:
                 options = list(question_data['options'].values())
                 correct_option_id = get_correct_option_id(question_data['options'], question_data['answer'])
                 
@@ -65,21 +68,27 @@ def main():
                     correct_option_id=correct_option_id,
                     is_anonymous=True
                 )
-                time.sleep(1)
-            polls_sent_successfully = True
-        except Unauthorized:
-            print(f"Warning: Bot was blocked by chat ID {chat_id}. Skipping this user.")
-            continue
-        except Exception as e:
-            print(f"An unexpected error occurred for chat ID {chat_id}: {e}")
-            continue
+                poll_sent_to_at_least_one_user = True
+            except Unauthorized:
+                print(f"Warning: Bot was blocked by chat ID {chat_id}. Skipping this user.")
+                continue
+            except Exception as e:
+                print(f"An unexpected error occurred for chat ID {chat_id} while sending question {question_data['id']}: {e}")
+                continue
+        
+        if poll_sent_to_at_least_one_user:
+            new_last_index = current_question_index + 1
+            time.sleep(1)
+        else:
+            print(f"Could not send question {question_data['id']} to any user. Stopping for this run.")
+            break
 
-    if polls_sent_successfully:
+    if new_last_index > last_index:
         with open(state_file, 'w') as f:
-            f.write(str(end_index))
-        print(f"Progress file updated. Next start index will be {end_index}.")
+            f.write(str(new_last_index))
+        print(f"Progress file updated. Next start index will be {new_last_index}.")
     else:
-        print("Could not send polls to any user. Progress file not updated.")
+        print("No new questions were sent successfully. Progress file not updated.")
 
 if __name__ == '__main__':
     main()
